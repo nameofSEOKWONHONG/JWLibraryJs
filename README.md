@@ -3,12 +3,15 @@ javascript and jquery extensions
 
 [How to Use]
 1. JWLibrary.Proxy
+~~~
 var proxy = JWLibrary.Proxy('[controller]', '[action]', param, false);
 proxy.WebMethod('GET', null('JsonData'), function(data){
     //get data and handle
 });
+~~~
 
 2. JWLibrary.DataTable
+~~~
 <script type="text/javascript">   
     var _datatable;
     $(document).ready(function () {
@@ -69,3 +72,4 @@ proxy.WebMethod('GET', null('JsonData'), function(data){
     }
  
 </script>
+~~~
