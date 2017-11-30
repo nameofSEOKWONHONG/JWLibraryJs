@@ -18,8 +18,7 @@ JWLibrary.TokenProxy = function (controller, action, param, isProgress) {
     else
         url = protocol + "://" + host + "/" + controller + "/" + action + "?" + param;
  
-    if(isProgress)
-        fnProgressShow();
+    if(isProgress){}
  
     this.WebMethod = function (type, json, token, successFn, errorFn) {
         $.ajax({
@@ -29,12 +28,11 @@ JWLibrary.TokenProxy = function (controller, action, param, isProgress) {
             data: json,
             dataType: "json",
             headers : {
-                "RequestVerificationToken": token
+                "__Token": token
             },
             async: true,
             success: function (data, textStatus, xhr) {
-                if(isProgress)
-                    fnProgressClose();
+                if(isProgress){}
  
                 if (data.ResCd == "00") {
                     successFn(data);
@@ -63,8 +61,7 @@ JWLibrary.TokenProxy = function (controller, action, param, isProgress) {
                 }
             },
             error: function (xhr, textStatus) {
-                if(isProgress)
-                    fnProgressClose();
+                if(isProgress) {}
  
                 if (xhr.status == 0) {
                     return;
@@ -88,8 +85,7 @@ JWLibrary.Proxy = function (controller, action, param, isProgress) {
  
     var url = protocol + "://" + host + "/" + controller + "/" + action + "?" + param;
  
-    if(isProgress)
-        fnProgressShow();
+    if(isProgress) {}
  
     this.WebMethod = function (type, json, successFn, errorFn) {
         $.ajax({
@@ -101,8 +97,7 @@ JWLibrary.Proxy = function (controller, action, param, isProgress) {
             dataType: "json",
             async: true,
             success: function (data, textStatus, xhr) {
-                if(isProgress)
-                    fnProgressClose();
+                if(isProgress) {}                   
  
                 if (data.ResCd == "00") {
                     successFn(data);
@@ -124,8 +119,7 @@ JWLibrary.Proxy = function (controller, action, param, isProgress) {
                 }
             },
             error: function (xhr, textStatus) {
-                if(isProgress)
-                    fnProgressClose();
+                if(isProgress){ }
  
                 if (xhr.status == 0) return;
             }
