@@ -46,7 +46,7 @@ proxy.WebMethod('GET', null('JsonData'), function(data){
                 ['PRODUCT_TYPE', { '1': '[display name]', '2': '[display name]', '3': '[display name]', '4': '[display name]' }], //set col's mapping [column, {'data':'display text', ...}]
             ],
             [
-                ['TITLE', '/Test/Detail?idx=#param1', 'G_IDX'] //set col's url link [column, url(ex:=#param1&...=#param2, mapping row data]
+                ['TITLE', '/Test/Detail?idx=#param1', 'G_IDX'] //set col's url link [column, url(ex:=#param1&...=#param2, mapping col name]
             ]
         );     
     });
@@ -54,7 +54,7 @@ proxy.WebMethod('GET', null('JsonData'), function(data){
     function fnRowRemove() {
         var rowId = _datatable.selectedIndex();
 
-        var proxy = JWLibrary.Proxy('Test', 'GetMembers', null);
+        var proxy = JWLibrary.Proxy('Test', 'GetMembers', null, false);
         proxy.WebMethod('GET', null, function (data) {
             if (data.ResCd == '00') {
                 _datatable.removeRow(rowId);                   
