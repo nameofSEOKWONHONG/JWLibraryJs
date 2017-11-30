@@ -32,24 +32,38 @@ proxy.WebMethod('GET', null('JsonData'), function(data){
     $(document).ready(function () {
         _datatable = JWLibrary.DataTable('#tbListTemp');
         _datatable.init(
-            ['No.', '상품종류', '상품명', '전체수량', '판매수량', '사용여부', '등록일', 'G_IDX'],
-            ['S_NUM', 'PRODUCT_TYPE', 'TITLE', 'CNT1', 'CNT2', 'ISACTIVE', 'REG_DT', 'G_IDX'],
-            [true, true, true, true, true, true, true, false],
-            ['text-center', 'text-center', 'text-center', 'text-right', 'text-right', 'text-center', 'text-center', ''],
-            ['text', 'text', 'text', 'text', 'text', 'text', 'text', ''],
-            false,
-            false,
-            [],
-            [],
-            [false, false, false, true, true, false, false, false],
-            [
-                ['PRODUCT_TYPE', { '1': '[display name]', '2': '[display name]', '3': '[display name]', '4': '[display name]' }], //set col's mapping [column, {'data':'display text', ...}]
-            ],
-            [
-                ['TITLE', '/Test/Detail?idx=#param1', 'G_IDX'] //set col's url link [column, url(ex:=#param1&...=#param2, mapping col name]
-            ]
-        );     
-    });
+                ['No.', '상품종류', '상품명', '전체수량', '판매수량', '사용여부', '등록일', 'G_IDX'],
+                ['SORT_NUM', 'PRODUCT_TYPE', 'TITLE', 'TOT_CNT', 'BUY_CNT', 'ISACTIVE', 'REG_DT', 'G_IDX'],
+                [true, true, true, false, true, true, true, false],
+                ['text-center', 'text-center', 'text-center', 'text-right', 'text-right', 'text-center', 'text-center', ''],
+                ['text', 'text', 'text', 'text', 'input', 'text', 'text', 'text'],
+                false,               
+                true,
+                false,
+                [],
+                [],
+                [false, false, false, true, true, false, false, false],
+                [
+                    ['PRODUCT_TYPE', { '1': '타입A', '2': '타입B', '3': '타입C', '4': '타입D' }], //set col's mapping [column, {'data':'display text', ...}]
+                    ['ISACTIVE', { '1': '사용', '0': '미사용' }]
+                ],
+                [
+                    ['TITLE', '/Test/Detail?gIdx=#param1', 'G_IDX'] //set col's url link [column, url(ex:=#param1&...=#param2, mapping row data]
+                ],
+                {
+                    'removeRow': function (rowId) {
+                        //console.log(rowId);
+                        //var elem = _datatable.getTableElement();
+                        //console.log(elem);
+                        //var $tr = elem.find('.DEF_ROW_' + rowId);
+                        //var $cells = $tr.find('td');
+                        //$cells.each(function (j) {
+                        //    console.log(j);
+                        //});
+                        console.log(_datatable.getCheckRowData());
+                    }
+                }
+            });
     
     function fnRowRemove() {
         var rowId = _datatable.selectedIndex();
