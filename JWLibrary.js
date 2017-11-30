@@ -181,6 +181,19 @@ JWLibrary.NPTokenProxy = function (controller, action, param) {
     return this;
 }
  
+/*
+* writer        SEOKWON HONG                                       
+* date          2017-11-30                                          
+* discription   Management for table element, using javasciprt and jquery
+* version       v0.1
+* functions                                                 
+*  1. auto render                                              
+*  2. support key, value mapping
+*  3. support edit(input)
+*  4. support row remove
+*  5. support index column
+*  6. support checkbox column
+*/
 JWLibrary.DataTable = function (tableId) {
     var _headerNames = [];
     var _colNames = [];
@@ -194,7 +207,7 @@ JWLibrary.DataTable = function (tableId) {
     var _footerColSumAllows = [];
     var _colWidths = [];
     var _colCommas = [];
-    var _colCases = [];
+   var _colCases = [];
     var _colUrls = [];
     var _colfunctions = [];
     var _colCheckbox = false;
@@ -208,33 +221,34 @@ JWLibrary.DataTable = function (tableId) {
         colAligns,          //col text align
         inputTypes,         //col types (support text, input)
         indexVisible,       //index column visible
-        colCheckbox,           //add checkbox col
+        colCheckbox,        //add checkbox col
         footerVisible,      //footer visible
         footerColSumAllows, //footer column summary yn
         colWidths,          //col width by bootstrap
         colCommas,          //col comma for decimal
         colCases,           //set col case
         colUrls,            //set col link url
-        colfunctions       
+        colfunctions        //set button functions (remove only)
     ) {
-        _headerNames  = headerNames;
-        _colNames  = colNames;
-        _inputTypes   = inputTypes;
-        _colVisibles     = colVisibles;
-        _indexVisible = indexVisible;
-        _colAligns   = colAligns;
-        _footerVisible    = footerVisible;
-        _footerColSumAllows   = footerColSumAllows;
-        _colWidths    = colWidths;
-        _colCommas    = colCommas;
-        _colCases = colCases;
-        _colUrls = colUrls;
-        _colfunctions = colfunctions;
-        _colCheckbox = colCheckbox;
+        _headerNames        = headerNames;
+        _colNames           = colNames;
+        _inputTypes         = inputTypes;
+        _colVisibles        = colVisibles;
+        _indexVisible       = indexVisible;
+        _colAligns          = colAligns;
+        _footerVisible      = footerVisible;
+        _footerColSumAllows = footerColSumAllows;
+        _colWidths          = colWidths;
+        _colCommas          = colCommas;
+        _colCases           = colCases;
+        _colUrls            = colUrls;
+        _colfunctions       = colfunctions;
+        _colCheckbox        = colCheckbox;
  
         fnRenderHeader();
     }
  
+    /*****************************private functions***************************/
     //header set
     function fnRenderHeader() {
         var $table = $(tableId);
@@ -265,12 +279,91 @@ JWLibrary.DataTable = function (tableId) {
         $.each(_colfunctions, function (key, value) {
             if (key == 'removeRow') {
                 $thead.append('<th class="text-center" style="width:50px;">삭제</th>');
+            }
+        });
+    }
+ 
+    //footer set
+    function fnRenderFooter() {
+        var $table = $(tableId);       
+ 
+        if (_footerVisible == true) {
+            $tfoot = $table.find('tfoot');
+ 
+            if ($tfoot.length > 0) {
+                $tfoot.empty();
+            }
+            else {
+                $table.append('<tfoot id="DEF_tbFoot" class="text-center"><tr></tr></tfoot>');
+            }
+ 
+            var $tbody = $table.find('tbody');
+            var dummayArr = new Array();
+ 
+            var summaries = [];
+            for (var i = 0; i < _colNames.length; i++) {
+                summaries[i] = 0;
+            }
+ 
+            $tbody.find('tr').each(function (row) {               
+                for (var i = 0; i < _colNames.length; i++) {
+                    var row = $(this).find('.DEF_' + _colNames[i]);
+                    var d = $('option:selected', row).val() || row.text().unComma() || row.val();                   
+ 
+                    if (d == '') {
+                        d = $(this).find('input').val().unComma();
+                    }
+ 
+                    if ($.isNumeric(d)) {
+                        summaries[i] = summaries[i] + parseInt(d);
+                    }
+                    else {
+                        summaries[i] = summaries[i] + 0;
+                    }
+ 
+                    console.log('i:' + i);
+                    console.log('summaries[i]:' + summaries[i]);
+                }
+            });
+ 
+            $tfoot = $table.find('tfoot:last');
+            $tfoot.empty();
+ 
+            var footHtml = '';
+            footHtml += '<tr>';
+ 
+            if (_indexVisible == true) {
+                footHtml += '<th>합계</th>';
+            }
+ 
+            for (var i = 0; i < _colNames.length; i++) {
+                if (_footerColSumAllows[i] == true) {
+                    footHtml += '<th class="' + _colAligns[i] + '">' + summaries[i].setComma() + '</th>';
+                }
+                else {
+                    footHtml += '<th class="' + _colAligns[i] + '"></th>';
+                }
+            }
+            footHtml += '</tr>'
+ 
+            $tfoot.html(footHtml);
+        }
+    }
+ 
+    //event set
+    function fnRegEvent() {
+        for (var i = 0; i < _colNames.length; i++) {
+            if (_inputTypes[i] == "input") {
+                var $table = $(tableId);
+                var $tbody = $table.find('tbody');
+ 
+                var $component = $tbody.find('.DEF_' + _colNames[i]).find('input');
                 var $editFlag = $tbody.find('.DEF_EDIT_FLAG_ROW_' + _I.selectedIndex());
                 $component.off();
-                $component.on('change', function () {                    
+                $component.on('change', function () {                   
                     var v = $(this).val();
                     $(this).val(v.setComma());
-                    fnRenderFooter(tableId);                   
+                    fnRenderFooter(tableId);                    
                     $editFlag.text(true);                   
                     return false;
                 });
@@ -422,18 +515,37 @@ JWLibrary.DataTable = function (tableId) {
         });
     }
  
-    this.getBody = function () {
+    //keyvalue pair
+    function lookup(obj, key) {
+        var type = typeof key;
+        if (type == 'string' || type == 'number') key = ('' + key).replace(/\[(.*?)\]/, function (m, key) {
+            return '.' + key;
+        }).split('.');
+ 
+        for (var i = 0, l = key.length, currentKey; i < l; i++) {
+            if (obj.hasOwnProperty(key[i])) obj = obj[key[i]];
+            else return undefined;
+        }
+ 
+        return obj;
+    }
+ 
+    /*****************************public functions*****************************/
+    //get tbody element
+    this.getBodyElem = function () {
         var $table = $(tableId);
         var $tbody = $table.find('tbody');
  
         return $tbody;
     }
  
-    this.getTableElement = function () {
+    //get table element
+    this.getTableElem = function () {
         return $(tableId);       
     }
  
-    this.getCheckRowData = function () {
+    //get checked row data
+    this.getCheckedRowData = function () {
         var $table = $(tableId);
         var $tbody = $table.find('tbody');
         var dummayArr = new Array();
@@ -485,23 +597,8 @@ JWLibrary.DataTable = function (tableId) {
  
         return retObj;
     }
- 
-    //keyvalue pair
-    function lookup(obj, key) {
-        var type = typeof key;
-        if (type == 'string' || type == 'number') key = ('' + key).replace(/\[(.*?)\]/, function (m, key) {
-            return '.' + key;
-        }).split('.');
- 
-        for (var i = 0, l = key.length, currentKey; i < l; i++) {
-            if (obj.hasOwnProperty(key[i])) obj = obj[key[i]];
-            else return undefined;
-        }
- 
-        return obj;
-    }
-       
-    //binding
+           
+    //data-binding (need json array)
     this.dataSource = function (data) {       
         fnRenderBody(data);       
         fnRenderFooter();       
@@ -510,7 +607,7 @@ JWLibrary.DataTable = function (tableId) {
         _rowCnt = data.length;
     }
  
-    //add
+    //add row (need json)
     this.addRow = function (array) {
         fnRenderRow(_rowCnt, array);       
         fnRenderFooter();
@@ -518,15 +615,15 @@ JWLibrary.DataTable = function (tableId) {
         _rowCnt++;
     }
  
-    //remove
+    //remove row
     this.removeRow = function (rowId) {
         var $table = $(tableId);
         var $row = $table.find('.DEF_ROW_' + rowId);
         $row.remove();
     }
  
-    //all clear
-    this.clearAll = function () {
+    //table clear
+    this.clear = function () {
         var $table = $(tableId);
         var $tbody = $table.find('tbody');
         var $tfoot = $table.find('tfoot');
@@ -534,7 +631,7 @@ JWLibrary.DataTable = function (tableId) {
         $tfoot.empty();
     }
  
-    //get all data (signed col's only)
+    //get all row data
     this.getAllData = function () {
         var $table = $(tableId);
         var $tbody = $table.find('tbody');
@@ -586,7 +683,7 @@ JWLibrary.DataTable = function (tableId) {
         return retObj;
     }
  
-    //get row data (signed col's only)
+    //get row data
     this.getRowData = function (rowId) {       
         var $table = $(tableId);
         var $tbody = $table.find('tbody');
@@ -599,7 +696,7 @@ JWLibrary.DataTable = function (tableId) {
                 if (i > 0) {
                     var $d = $('option:selected', this).val() || $(this).text() || $(this).val();
  
-                    if ($d == '') {
+                   if ($d == '') {
                         $d = $(this).find('input').val();
                     }
  
@@ -619,12 +716,12 @@ JWLibrary.DataTable = function (tableId) {
         return retObj;
     }
  
-    //get row number
+    //get selected row number (define. DEF_ROW_[row number])
     this.selectedIndex = function () {
         return _selectedIndex;
     }
  
-    //set row data (signed col's only)
+    //set column data per row
     this.setRowData = function (rowId, colName, val) {
         var $table = $(tableId);
         var $tbody = $table.find('tbody');
