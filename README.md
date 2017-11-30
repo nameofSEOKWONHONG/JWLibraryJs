@@ -63,7 +63,9 @@ proxy.WebMethod('GET', null('JsonData'), function(data){
                         console.log(_datatable.getCheckRowData());
                     }
                 }
-            });
+           });
+        );
+    }
     
     function fnRowRemove() {
         var rowId = _datatable.selectedIndex();
