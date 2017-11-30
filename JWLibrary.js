@@ -200,6 +200,11 @@ JWLibrary.DataTable = function (tableId) {
     var _footerColSumAllows = [];
     var _colWidths = [];
     var _colCommas = [];
+    var _colCases = [];
+    var _colUrls = [];
+    var _buttons = [];
+ 
+    var _I = this;
  
     this.init = function (
         headerNames,        //col header name
@@ -211,9 +216,10 @@ JWLibrary.DataTable = function (tableId) {
         footerVisible,      //footer visible
         footerColSumAllows, //footer column summary yn
         colWidths,          //col width by bootstrap
-        colCommas           //col comma for decimal
+        colCommas,          //col comma for decimal
+        colCases,           //col case set
+        colUrls             //col link url set
     ) {
- 
         _headerNames  = headerNames;
         _colNames  = colNames;
         _inputTypes   = inputTypes;
@@ -221,16 +227,17 @@ JWLibrary.DataTable = function (tableId) {
         _indexVisible = indexVisible;
         _colAligns   = colAligns;
         _footerVisible    = footerVisible;
-       _footerColSumAllows   = footerColSumAllows;
+        _footerColSumAllows   = footerColSumAllows;
         _colWidths    = colWidths;
         _colCommas    = colCommas;
+        _colCases = colCases;
+        _colUrls = colUrls;
  
-        fnSetHeader();
-        //fnSetFooter(tableId);
-        fnRegEvent();
+        fnRenderHeader();        
     }
  
-    function fnSetHeader() {
+    //header set
+    function fnRenderHeader() {
         var $table = $(tableId);
  
         $table.prepend('<thead id="DEF_tbHead" class="text-center"><tr></tr></thead>');
@@ -239,34 +246,22 @@ JWLibrary.DataTable = function (tableId) {
         if (_indexVisible == true)
             $thead.append('<th style="width:50px;">IDX</th>');
         else
-            $thead.append('<th style="display:none;">IDX</th>');
+            $thead.append('<th class="hidden">IDX</th>');
  
         for (var i = 0; i < _headerNames.length; i++) {
-            $thead.append('<th class="text-center ' + _colWidths[i] + '">' + _headerNames[i] + '</th>');
-       }
-    }
- 
-    function fnRegEvent() {
-        var $table = $(tableId);
-        $table.on('click', 'tr', function () {
-            //$(this).data('isSelected', true);
-            //$(this).siblings().data('isSelected', false);
-            //_selectedIndex = $tbody.find('tr').index(this);
- 
-            _selectedIndex = parseInt($(this).find('.DEF_IDX').text()) - 1;
-        });
- 
-        $table.on('click', '.clickable-row', function (event) {
-            if ($(this).hasClass('active')) {
-                $(this).removeClass('active');
+            if (_colVisibles[i] == false) {
+                $thead.append('<th class="text-center ' + _colWidths[i] + ' hidden">' + _headerNames[i] + '</th>');
             }
             else {
-                $(this).addClass('active').siblings().removeClass('active');
+                $thead.append('<th class="text-center ' + _colWidths[i] + '">' + _headerNames[i] + '</th>');
             }
-        });
+        }
+ 
+        $thead.append('<th class="hidden">EDIT_FLAG</th>');
     }
  
-    function fnSetFooter() {
+    //footer set
+    function fnRenderFooter() {
         var $table = $(tableId);       
  
         if (_footerVisible == true) {
@@ -283,11 +278,11 @@ JWLibrary.DataTable = function (tableId) {
             var dummayArr = new Array();
  
             var summaries = [];
-            for (var i = 0; i < 4; i++) {
+            for (var i = 0; i < _colNames.length; i++) {
                 summaries[i] = 0;
             }
  
-            $tbody.find('tr').each(function (row) {
+            $tbody.find('tr').each(function (row) {               
                 for (var i = 0; i < _colNames.length; i++) {
                     var row = $(this).find('.DEF_' + _colNames[i]);
                     var d = $('option:selected', row).val() || row.text().unComma() || row.val();                   
@@ -313,13 +308,17 @@ JWLibrary.DataTable = function (tableId) {
  
             var footHtml = '';
             footHtml += '<tr>';
-            footHtml += '<th>합계</th>';
+ 
+            if (_indexVisible == true) {
+                footHtml += '<th>합계</th>';
+            }
+ 
             for (var i = 0; i < _colNames.length; i++) {
                 if (_footerColSumAllows[i] == true) {
-                    footHtml += '<th class="' + _colAligns[i] + '">' + summaries[i] + '</th>';
+                    footHtml += '<th class="' + _colAligns[i] + '">' + summaries[i].setComma() + '</th>';
                 }
                 else {
-                    footHtml += '<th class="' + _colAligns[i] + '">0</th>';
+                    footHtml += '<th class="' + _colAligns[i] + '"></th>';
                 }
             }
             footHtml += '</tr>'
@@ -328,196 +327,222 @@ JWLibrary.DataTable = function (tableId) {
         }
     }
  
-    this.dataSource = function (data) {
-        fnBodyRender(data);
-        fnSetFooter();
- 
+    //event set
+    function fnRegEvent() {
         for (var i = 0; i < _colNames.length; i++) {
             if (_inputTypes[i] == "input") {
                 var $table = $(tableId);
                 var $tbody = $table.find('tbody');
  
                 var $component = $tbody.find('.DEF_' + _colNames[i]).find('input');
- 
+                $component.off();
                 $component.on('change', function () {
                     var v = $(this).val();
                     $(this).val(v.setComma());
-                    fnSetFooter(tableId);
+                    fnRenderFooter(tableId);
                     //alert('t');
+                    return false;
                 });
             }
         }
     }
  
-    function fnBodyRender(data) {
+    //body set
+    function fnRenderBody(data) {
         var $table = $(tableId);
-        $tbody = $table.find('tbody');
+        var $tbody = $table.find('tbody');
  
         if ($tbody.length > 0) {
             $tbody.empty();
         }
         else {
-            $table.append('<tbody id="DEF_tbBody" class="text-center"><tr></tr></tbody>');
+            $table.append('<tbody id="DEF_tbBody" class="text-center"></tbody>');
         }
  
-        $tbody = $table.find('tbody:last');
- 
-        _rowCnt = data.length;
- 
-        var bodyHtml = '';
         for (var row = 0; row < data.length; row++) {
-            var rowData = $.map(data[row], function (el) { return el });
- 
-            bodyHtml = '<tr class="clickable-row DEF_ROW_' + (row) + '">';
-            if (_indexVisible == true) {
-                bodyHtml += '<td class="DEF_IDX">' + (row + 1) + '</td>';
-            }
- 
-            for (var col = 0; col < rowData.length; col++) {
-                if (_inputTypes.length <= 0) {
-                    bodyHtml += '<td class="hidden">' + _colNames[col] + '</td>';
- 
-                    if (_colCommas[col] == true) {
-                        bodyHtml += '<td class="DEF_' + _colNames[col] + ' ' + _colAligns[col] + '">' + rowData[col].setComma() + '</td>';
-                    }
-                    else {
-                        bodyHtml += '<td class="DEF_' + _colNames[col] + ' ' + _colAligns[col] + '">' + rowData[col] + '</td>';
-                    }
-                }
-                else {
-                    if (_inputTypes[col] == 'text') {
-                        bodyHtml += '<td class="hidden">' + _colNames[col] + '</td>';
- 
-                        if (_colCommas[col] == true) {
-                            bodyHtml += '<td class="DEF_' + _colNames[col] + ' ' + _colAligns[col] + '">' + rowData[col].setComma() + '</td>';
-                        }
-                        else {
-                            bodyHtml += '<td class="DEF_' + _colNames[col] + ' ' + _colAligns[col] + '">' + rowData[col] + '</td>';
-                        }
-                    }
-                    else if (_inputTypes[col] == 'input') {
-                        bodyHtml += '<td class="hidden">' + _colNames[col] + '</td>';
- 
-                        if (_colCommas[col] == true) {
-                            bodyHtml += '<td class="DEF_' + _colNames[col] + '"><input type="text" value="' + rowData[col].setComma() + '" class="' + _colAligns[col] + '"/></td>';
-                        }
-                        else {
-                            bodyHtml += '<td class="DEF_' + _colNames[col] + '"><input type="text" value="' + rowData[col] + '" class="' + _colAligns[col] + '"/></td>';
-                        }
-                    }
-                }
-            }
- 
-            bodyHtml += '</tr>';
-            $tbody.append(bodyHtml);
+            //var rowData = $.map(data[row], function (el) { return el });
+            fnRenderRow(row, data[row]);
+            fnRenderOption(row);
         }
     }
  
-    this.addRow = function (rowData) {
+    //row set
+    function fnRenderRow(row, rowData) {
         var $table = $(tableId);
         $tbody = $table.find('tbody:last');
  
-        var bodyHtml = '';
-        bodyHtml = '<tr class="clickable-row DEF_ROW_' + (_rowCnt) + '">';
+        $tbody.append($('<tr class="clickable-row DEF_ROW_' + (row) + '">'));
+        var $tr = $tbody.find('.DEF_ROW_' + row);
  
         if (_indexVisible == true) {
-            bodyHtml += '<td class="DEF_IDX">' + (_rowCnt + 1) + '</td>';
-        }       
+            $tr.append('<td class="DEF_IDX">' + (row + 1) + '</td>');
+        }
+        else {
+            $tr.append('<td class="DEF_IDX hidden">' + (row + 1) + '</td>');
+        }
  
-        for (var col = 0; col < rowData.length; col++) {
-            if (_inputTypes.length <= 0) {
-                bodyHtml += '<td class="hidden">' + _colNames[col] + '</td>';
+        //set td
+        for (var i = 0; i < _colNames.length; i++) {
+            $tr.append('<td class="hidden">' + _colNames[i] + '</td>');
+            var val = lookup(rowData, _colNames[i]);
+            $tr.append('<td class="DEF_' + _colNames[i] + '">' + val + '</td>');           
+        }
+        $tr.append('<td class="hidden DEF_EDIT_FLAG" style="display:none;">False</td>');
  
-                if (_colCommas[col] == true) {
-                    bodyHtml += '<td class="DEF_' + _colNames[col] + ' ' + _colAligns[col] + '">' + rowData[col].setComma() + '</td>';
+        //set col's case
+        for (var i = 0; i < _colCases.length; i++) {
+            if (_colNames.indexOf(_colCases[i][0]) >= 0) {
+                var $td = $tr.find('.DEF_' + _colCases[i][0]);
+ 
+                var v = lookup(_colCases[i][1], $td.text());
+                $td.text(v);
+            }
+        }
+ 
+        //set col's url
+        for (var i = 0; i < _colUrls.length; i++) {
+            if (_colNames.indexOf(_colUrls[i][0]) >= 0) {
+                var $td = $tr.find('.DEF_' + _colUrls[i][0]);
+                var url = _colUrls[i][1];
+ 
+                for (var j = 2; j < _colUrls[i].length; j++) {
+                    url = url.replace('#param' + ((j - 1) + ''), lookup(rowData, _colUrls[i][j]));
                 }
-                else {
-                    bodyHtml += '<td class="DEF_' + _colNames[col] + ' ' + _colAligns[col] + '">' + rowData[col] + '</td>';
-                }
+ 
+                var aTag = $('<a>', { href: url });
+                aTag.css('text-decoration', 'underline');
+                aTag.text($td.text());
+                $td.text('').append(aTag);
+            }
+        }
+ 
+        //set col's visible
+        for (var i = 0; i < _colNames.length; i++) {
+            if (_colVisibles[i] == false) {
+                var $td = $tr.find('.DEF_' + _colNames[i]);
+                $td.attr('class', 'hidden');
+            }
+        }
+ 
+        $table.off();
+        $table.on('click', 'tr', '.clickable-row', function () {
+            _selectedIndex = parseInt($(this).find('.DEF_IDX').text()) - 1;
+ 
+            if ($(this).hasClass('active')) {
+                $(this).removeClass('active');
             }
             else {
-                if (_inputTypes[col] == 'text') {
-                    bodyHtml += '<td class="hidden">' + _colNames[col] + '</td>';
- 
-                    if (_colCommas[col] == true) {
-                        bodyHtml += '<td class="DEF_' + _colNames[col] + ' ' + _colAligns[col] + '">' + rowData[col].setComma() + '</td>';
-                    }
-                    else {
-                        bodyHtml += '<td class="DEF_' + _colNames[col] + ' ' + _colAligns[col] + '">' + rowData[col] + '</td>';
-                    }
-                }
-                else if (_inputTypes[col] == 'input') {
-                    bodyHtml += '<td class="hidden">' + _colNames[col] + '</td>';
- 
-                    if (_colCommas[col] == true) {
-                        bodyHtml += '<td class="DEF_' + _colNames[col] + '"><input type="text" value="' + rowData[col].setComma() + '" class="' + _colAligns[col] + '"/></td>';
-                    }
-                    else {
-                        bodyHtml += '<td class="DEF_' + _colNames[col] + '"><input type="text" value="' + rowData[col] + '" class="' + _colAligns[col] + '"/></td>';
-                    }
-                }
+                $(this).addClass('active').siblings().removeClass('active');
             }
-        }
- 
-        bodyHtml += '</tr>';
-        $tbody.append(bodyHtml);
- 
-        _rowCnt++;
- 
-        for (var i = 0; i < _colNames.length; i++) {
-            if (_inputTypes[i] == "input") {
-                var $table = $(tableId);
-                var $tbody = $table.find('tbody');
- 
-                var $component = $tbody.find('.DEF_' + _colNames[i]).find('input');
- 
-                $component.on('change', function () {
-                    var v = $(this).val();
-                    $(this).val(v.setComma());
-                    fnSetFooter(tableId);
-                    //alert('t');
-                });
-            }
-        }
+        });
     }
  
+    //keyvalue pair
+    function lookup(obj, key) {
+        var type = typeof key;
+        if (type == 'string' || type == 'number') key = ('' + key).replace(/\[(.*?)\]/, function (m, key) {
+            return '.' + key;
+        }).split('.');
+ 
+        for (var i = 0, l = key.length, currentKey; i < l; i++) {
+            if (obj.hasOwnProperty(key[i])) obj = obj[key[i]];
+            else return undefined;
+        }
+ 
+        return obj;
+    }
+ 
+    //option's set
+    function fnRenderOption(rowNum) {
+        var $table = $(tableId);
+        var $tbody = $table.find('tbody');
+ 
+        $tbody.find('.DEF_ROW_' + rowNum).each(function () {
+            var $cells = $(this).find('td');
+            var index = -1;
+ 
+            $cells.each(function (j) {
+                if ($(this).attr('class') != 'DEF_IDX' &&
+                    $(this).attr('class') != 'hidden') {
+                    var $d = $('option:selected', this).val() || $(this).text() || $(this).val();
+ 
+                    if (_colCommas[index] == true) {
+                        $(this).text($d.setComma());
+                    }
+ 
+                    if (_inputTypes[index] == 'input') {
+                        $(this).html('<input type="text" class="' + _colAligns[index] + '" value="' + $(this).text() + '"  />');
+                    }
+                    else {
+                        $(this).attr('class', _colAligns[index]);
+                    }
+ 
+                    index++;
+                }
+            });
+        });
+    }
+ 
+    //binding
+    this.dataSource = function (data) {       
+        fnRenderBody(data);       
+        fnRenderFooter();       
+        fnRegEvent();
+ 
+        _rowCnt = data.length;
+    }
+ 
+    //add
+    this.addRow = function (array) {
+        fnRenderRow(_rowCnt, array);
+        fnRenderOption(_rowCnt);
+        fnRenderFooter();
+        fnRegEvent();
+        _rowCnt++;
+    }
+ 
+    //remove
     this.removeRow = function (rowId) {
         var $table = $(tableId);
         var $row = $table.find('.DEF_ROW_' + rowId);
         $row.remove();
     }
  
+    //all clear
     this.clearAll = function () {
         var $table = $(tableId);
         var $tbody = $table.find('tbody');
+        var $tfoot = $table.find('tfoot');
         $tbody.empty();
- 
-        fnSetFooter();
+        $tfoot.empty();
     }
  
+    //get all data (signed col's only)
     this.getAllData = function () {
         var $table = $(tableId);
         var $tbody = $table.find('tbody');
         var dummayArr = new Array();
  
-        $tbody.each(function () {
+        $tbody.find('tr').each(function (row) {
             var cells = $(this).find('td');
- 
             $(cells).each(function (i) {
-                if ($(this).attr('class') != 'DEF_IDX') {
-                    var $d = $('option:selected', this).val() || $(this).text() || $(this).val();
+                if (i > 0) {
+                    if ($(this).attr('class') != 'DEF_IDX') {
+                        var $d = $('option:selected', this).val() || $(this).text() || $(this).val();
  
-                    if ($d == '') {
-                        $d = $(this).find('input').val();
+                        if ($d == '') {
+                            $d = $(this).find('input').val();
+                        }
+ 
+                        dummayArr.push($d);
                     }
- 
-                    dummayArr.push($d);
                 }
             });
         });
  
-        var retObj = new Array();
+       
         var obj = [];
+        var retObj = new Array();
         var divLength = dummayArr.length / 2;
  
         for (var i = 0; i <= dummayArr.length; i = i + 2) {
@@ -540,6 +565,7 @@ JWLibrary.DataTable = function (tableId) {
         return retObj;
     }
  
+    //get row data (signed col's only)
     this.getRowData = function (rowId) {       
         var $table = $(tableId);
         var $tbody = $table.find('tbody');
@@ -572,10 +598,12 @@ JWLibrary.DataTable = function (tableId) {
         return retObj;
     }
  
+    //get row number
     this.selectedIndex = function () {
         return _selectedIndex;
     }
  
+    //set row data (signed col's only)
     this.setRowData = function (rowId, colName, val) {
         var $table = $(tableId);
         var $tbody = $table.find('tbody');
@@ -596,23 +624,24 @@ JWLibrary.DataTable = function (tableId) {
         });
     }
  
-    ///*****************************************************************
-    //string extensions
-    Number.prototype.setComma = function () {
-        return String(this).setComma();
-    }
- 
-    String.prototype.setComma = function () {
-        return this.replace(/(\d)(?=(?:\d{3})+(?!\d))/g, '$1,');
-    }
- 
-    Number.prototype.unComma = function () {
-        return String(this).unComma();
-    }
- 
-    String.prototype.unComma = function () {
-        return this.replace(/[^\d]+/g, '');
-    }
-    //*****************************************************************/
     return this;
 }
+ 
+///*****************************************************************
+//string extensions
+Number.prototype.setComma = function () {
+    return String(this).setComma();
+}
+
+String.prototype.setComma = function () {
+    return this.replace(/(\d)(?=(?:\d{3})+(?!\d))/g, '$1,');
+}
+
+Number.prototype.unComma = function () {
+    return String(this).unComma();
+}
+
+String.prototype.unComma = function () {
+    return this.replace(/[^\d]+/g, '');
+}
+//*****************************************************************/
