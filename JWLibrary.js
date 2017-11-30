@@ -196,7 +196,8 @@ JWLibrary.DataTable = function (tableId) {
     var _colCommas = [];
     var _colCases = [];
     var _colUrls = [];
-    var _buttons = [];
+    var _colfunctions = [];
+    var _colCheckbox = false;
  
     var _I = this;
  
@@ -207,12 +208,14 @@ JWLibrary.DataTable = function (tableId) {
         colAligns,          //col text align
         inputTypes,         //col types (support text, input)
         indexVisible,       //index column visible
+        colCheckbox,           //add checkbox col
         footerVisible,      //footer visible
         footerColSumAllows, //footer column summary yn
         colWidths,          //col width by bootstrap
         colCommas,          //col comma for decimal
-        colCases,           //col case set
-        colUrls             //col link url set
+        colCases,           //set col case
+        colUrls,            //set col link url
+        colfunctions       
     ) {
         _headerNames  = headerNames;
         _colNames  = colNames;
@@ -226,8 +229,10 @@ JWLibrary.DataTable = function (tableId) {
         _colCommas    = colCommas;
         _colCases = colCases;
         _colUrls = colUrls;
+        _colfunctions = colfunctions;
+        _colCheckbox = colCheckbox;
  
-        fnRenderHeader();        
+        fnRenderHeader();
     }
  
     //header set
@@ -236,6 +241,10 @@ JWLibrary.DataTable = function (tableId) {
  
         $table.prepend('<thead id="DEF_tbHead" class="text-center"><tr></tr></thead>');
         $thead = $table.find('thead > tr:first');
+ 
+        if (_colCheckbox == true) {
+            $thead.append('<th style="width:50px;">#</th>');
+        }
  
         if (_indexVisible == true)
             $thead.append('<th style="width:50px;">IDX</th>');
@@ -252,93 +261,33 @@ JWLibrary.DataTable = function (tableId) {
         }
  
         $thead.append('<th class="hidden">EDIT_FLAG</th>');
-    }
  
-    //footer set
-    function fnRenderFooter() {
-        var $table = $(tableId);       
- 
-        if (_footerVisible == true) {
-            $tfoot = $table.find('tfoot');
- 
-            if ($tfoot.length > 0) {
-                $tfoot.empty();
-            }
-            else {
-                $table.append('<tfoot id="DEF_tbFoot" class="text-center"><tr></tr></tfoot>');
-            }
- 
-            var $tbody = $table.find('tbody');
-            var dummayArr = new Array();
- 
-            var summaries = [];
-            for (var i = 0; i < _colNames.length; i++) {
-                summaries[i] = 0;
-            }
- 
-            $tbody.find('tr').each(function (row) {               
-                for (var i = 0; i < _colNames.length; i++) {
-                    var row = $(this).find('.DEF_' + _colNames[i]);
-                    var d = $('option:selected', row).val() || row.text().unComma() || row.val();                   
- 
-                    if (d == '') {
-                        d = $(this).find('input').val().unComma();
-                    }
- 
-                    if ($.isNumeric(d)) {
-                        summaries[i] = summaries[i] + parseInt(d);
-                    }
-                    else {
-                        summaries[i] = summaries[i] + 0;
-                    }
- 
-                    console.log('i:' + i);
-                    console.log('summaries[i]:' + summaries[i]);
-                }
-            });
- 
-            $tfoot = $table.find('tfoot:last');
-            $tfoot.empty();
- 
-            var footHtml = '';
-            footHtml += '<tr>';
- 
-            if (_indexVisible == true) {
-                footHtml += '<th>합계</th>';
-            }
- 
-            for (var i = 0; i < _colNames.length; i++) {
-                if (_footerColSumAllows[i] == true) {
-                    footHtml += '<th class="' + _colAligns[i] + '">' + summaries[i].setComma() + '</th>';
-                }
-                else {
-                    footHtml += '<th class="' + _colAligns[i] + '"></th>';
-                }
-            }
-            footHtml += '</tr>'
- 
-            $tfoot.html(footHtml);
-        }
-    }
- 
-    //event set
-    function fnRegEvent() {
-        for (var i = 0; i < _colNames.length; i++) {
-            if (_inputTypes[i] == "input") {
-                var $table = $(tableId);
-                var $tbody = $table.find('tbody');
- 
-                var $component = $tbody.find('.DEF_' + _colNames[i]).find('input');
+        $.each(_colfunctions, function (key, value) {
+            if (key == 'removeRow') {
+                $thead.append('<th class="text-center" style="width:50px;">삭제</th>');
+                var $editFlag = $tbody.find('.DEF_EDIT_FLAG_ROW_' + _I.selectedIndex());
                 $component.off();
-                $component.on('change', function () {
+                $component.on('change', function () {                    
                     var v = $(this).val();
                     $(this).val(v.setComma());
-                    fnRenderFooter(tableId);
-                    //alert('t');
+                    fnRenderFooter(tableId);                   
+                    $editFlag.text(true);                   
                     return false;
                 });
             }
         }
+ 
+        var $table = $(tableId);
+        var $tbody = $table.find('tbody');
+        var $trs = $tbody.find('tr');
+ 
+        $trs.each(function (row) {
+            //$(this).find('td .DEF_EDIT_FLAG').on('change';
+ 
+            //$(cells).each(function (i) {
+ 
+            //});
+        });
     }
  
     //body set
@@ -355,8 +304,7 @@ JWLibrary.DataTable = function (tableId) {
  
         for (var row = 0; row < data.length; row++) {
             //var rowData = $.map(data[row], function (el) { return el });
-            fnRenderRow(row, data[row]);
-            fnRenderOption(row);
+            fnRenderRow(row, data[row]);           
         }
     }
  
@@ -368,11 +316,15 @@ JWLibrary.DataTable = function (tableId) {
         $tbody.append($('<tr class="clickable-row DEF_ROW_' + (row) + '">'));
         var $tr = $tbody.find('.DEF_ROW_' + row);
  
+        if (_colCheckbox == true) {
+            $tr.append('<td class="DEF_CHK"><input type="checkbox" class="DEF_CHECKBOX"/></td>');
+        }
+ 
         if (_indexVisible == true) {
             $tr.append('<td class="DEF_IDX">' + (row + 1) + '</td>');
         }
         else {
-            $tr.append('<td class="DEF_IDX hidden">' + (row + 1) + '</td>');
+            $tr.append('<td class="DEF_IDX" style="display:none;">' + (row + 1) + '</td>');
         }
  
         //set td
@@ -381,7 +333,8 @@ JWLibrary.DataTable = function (tableId) {
             var val = lookup(rowData, _colNames[i]);
             $tr.append('<td class="DEF_' + _colNames[i] + '">' + val + '</td>');           
         }
-        $tr.append('<td class="hidden DEF_EDIT_FLAG" style="display:none;">False</td>');
+        $tr.append('<td class="DEF_EDIT_FLAG" style="display:none;">EDIT_FLAG</td>');
+        $tr.append('<td class="DEF_EDIT_FLAG_ROW_' + row + '" style="display:none;">False</td>');
  
         //set col's case
         for (var i = 0; i < _colCases.length; i++) {
@@ -414,12 +367,12 @@ JWLibrary.DataTable = function (tableId) {
         for (var i = 0; i < _colNames.length; i++) {
             if (_colVisibles[i] == false) {
                 var $td = $tr.find('.DEF_' + _colNames[i]);
-                $td.attr('class', 'hidden');
+                $td.css('display', 'none');
             }
         }
  
         $table.off();
-        $table.on('click', 'tr', '.clickable-row', function () {
+        $tr.on('click', function () {
             _selectedIndex = parseInt($(this).find('.DEF_IDX').text()) - 1;
  
             if ($(this).hasClass('active')) {
@@ -429,35 +382,27 @@ JWLibrary.DataTable = function (tableId) {
                 $(this).addClass('active').siblings().removeClass('active');
             }
         });
-    }
  
-    //keyvalue pair
-    function lookup(obj, key) {
-        var type = typeof key;
-        if (type == 'string' || type == 'number') key = ('' + key).replace(/\[(.*?)\]/, function (m, key) {
-            return '.' + key;
-        }).split('.');
+        $.each(_colfunctions, function (key, value) {
+            if (key == 'removeRow') {
+                $tr.append('<td class="DEF_REMOVE"><button class="btn btn-sm btn-danger DEF_BTN_REMOVE" style="padding:0px 10px;">삭제</button></td>');
  
-        for (var i = 0, l = key.length, currentKey; i < l; i++) {
-            if (obj.hasOwnProperty(key[i])) obj = obj[key[i]];
-            else return undefined;
-        }
+                var $removeBtn = $tr.find('.DEF_BTN_REMOVE');
+                $removeBtn.on('click', function () {
+                    var $func = lookup(_colfunctions, 'removeRow');
+                    $func.call('', _I.selectedIndex());                   
+                });
+            }
+        });
  
-        return obj;
-    }
- 
-    //option's set
-    function fnRenderOption(rowNum) {
-        var $table = $(tableId);
-        var $tbody = $table.find('tbody');
- 
-        $tbody.find('.DEF_ROW_' + rowNum).each(function () {
+        $tr.each(function (row) {
             var $cells = $(this).find('td');
             var index = -1;
  
             $cells.each(function (j) {
                 if ($(this).attr('class') != 'DEF_IDX' &&
-                    $(this).attr('class') != 'hidden') {
+                    $(this).attr('class') != 'hidden' &&
+                    $(this).attr('class') != 'DEF_CHECKBOX') {
                     var $d = $('option:selected', this).val() || $(this).text() || $(this).val();
  
                     if (_colCommas[index] == true) {
@@ -477,6 +422,85 @@ JWLibrary.DataTable = function (tableId) {
         });
     }
  
+    this.getBody = function () {
+        var $table = $(tableId);
+        var $tbody = $table.find('tbody');
+ 
+        return $tbody;
+    }
+ 
+    this.getTableElement = function () {
+        return $(tableId);       
+    }
+ 
+    this.getCheckRowData = function () {
+        var $table = $(tableId);
+        var $tbody = $table.find('tbody');
+        var dummayArr = new Array();
+ 
+        $tbody.find('tr').each(function (row) {
+            var $checkbox = $(this).find('.DEF_CHECKBOX');
+            if ($checkbox.is(':checked') == true) {
+                var cells = $(this).find('td');
+ 
+                $(cells).each(function (i) {
+                    if (
+                        $(this).attr('class') != 'DEF_IDX' &&
+                        $(this).attr('class') != 'DEF_REMOVE' &&
+                        $(this).attr('class') != 'DEF_CHK'
+                       ) {
+                        var $d = $('option:selected', this).val() || $(this).text() || $(this).val();
+ 
+                        if ($d == '') {
+                            $d = $(this).find('input').val();
+                        }
+ 
+                        dummayArr.push($d);
+                    }
+                });
+            }
+        });
+ 
+ 
+        var obj = [];
+        var retObj = new Array();
+        var divLength = dummayArr.length / 2;
+ 
+        for (var i = 0; i <= dummayArr.length; i = i + 2) {
+            var keyValuePair = new Object();
+            keyValuePair.Key = dummayArr[i];
+            keyValuePair.Value = dummayArr[i + 1];
+            obj.push(keyValuePair);
+ 
+            if (i == 0) continue;
+            if (dummayArr[i + 2] == _colNames[0]) {
+                retObj.push(obj);
+                obj = [];
+            }
+            else if (dummayArr.length == i + 2) {
+                retObj.push(obj);
+                obj = [];
+            }
+        }
+ 
+        return retObj;
+    }
+ 
+    //keyvalue pair
+    function lookup(obj, key) {
+        var type = typeof key;
+        if (type == 'string' || type == 'number') key = ('' + key).replace(/\[(.*?)\]/, function (m, key) {
+            return '.' + key;
+        }).split('.');
+ 
+        for (var i = 0, l = key.length, currentKey; i < l; i++) {
+            if (obj.hasOwnProperty(key[i])) obj = obj[key[i]];
+            else return undefined;
+        }
+ 
+        return obj;
+    }
+       
     //binding
     this.dataSource = function (data) {       
         fnRenderBody(data);       
@@ -488,8 +512,7 @@ JWLibrary.DataTable = function (tableId) {
  
     //add
     this.addRow = function (array) {
-        fnRenderRow(_rowCnt, array);
-        fnRenderOption(_rowCnt);
+        fnRenderRow(_rowCnt, array);       
         fnRenderFooter();
         fnRegEvent();
         _rowCnt++;
@@ -521,7 +544,11 @@ JWLibrary.DataTable = function (tableId) {
             var cells = $(this).find('td');
             $(cells).each(function (i) {
                 if (i > 0) {
-                    if ($(this).attr('class') != 'DEF_IDX') {
+                    if (
+                        $(this).attr('class') != 'DEF_IDX' &&
+                        $(this).attr('class') != 'DEF_REMOVE'
+                       )
+                    {
                         var $d = $('option:selected', this).val() || $(this).text() || $(this).val();
  
                         if ($d == '') {
@@ -620,6 +647,7 @@ JWLibrary.DataTable = function (tableId) {
  
     return this;
 }
+ 
  
 ///*****************************************************************
 //string extensions
