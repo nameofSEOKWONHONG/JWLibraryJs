@@ -47,8 +47,7 @@ proxy.WebMethod('GET', null('JsonData'), function(data){
             ],
             [
                 ['TITLE', '/Test/Detail?idx=#param1', 'G_IDX'] //set col's url link [column, url(ex:=#param1&...=#param2, mapping row data]
-            ],
-            ['remove']
+            ]
         );     
     });
     
