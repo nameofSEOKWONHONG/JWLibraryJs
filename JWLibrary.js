@@ -1,3 +1,13 @@
+function includeJs(jsFilePath) {
+    var js = document.createElement('script');
+    js.type = "text/javascript";
+    js.src  = jsFilePath;
+
+    document.head.appendChild(js);
+}
+
+includeJs("./JWLibrary.common.js");
+
 var JWLibrary = [];
  
 JWLibrary.TokenProxy = function (controller, action, param, isProgress) {
@@ -782,24 +792,3 @@ JWLibrary.DataTable = function (tableId) {
 
     return this;
 }
-
- 
- 
-///*****************************************************************
-//string extensions
-Number.prototype.setComma = function () {
-    return String(this).setComma();
-}
-
-String.prototype.setComma = function () {
-    return this.replace(/(\d)(?=(?:\d{3})+(?!\d))/g, '$1,');
-}
-
-Number.prototype.unComma = function () {
-    return String(this).unComma();
-}
-
-String.prototype.unComma = function () {
-    return this.replace(/[^\d]+/g, '');
-}
-//*****************************************************************/
