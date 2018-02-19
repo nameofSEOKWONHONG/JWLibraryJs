@@ -792,3 +792,226 @@ JWLibrary.DataTable = function (tableId) {
 
     return this;
 }
+
+JWLibrary.SStorage = function (storageKey) {
+
+    this.chkExpired = function () {
+
+        var hasStorage = ("sessionStorage" in window && window.sessionStorage),
+
+                storageKey = "UniqueStorageKey",
+
+                now, expiration, data = false;
+
+
+        try {
+
+            if (hasStorage) {
+
+                data = sessionStorage.getItem(storageKey);
+
+
+                if (data) {
+
+                    //extract saved object from json encoded string
+
+                    data = JSON.parse(data);
+
+
+                    //calcurate expiration time for content
+
+                    //to force periodic refresh after 30 min.
+
+                    now = new Date();
+
+                    expiration = new Date(data.timestamp);
+
+                    expiration.setMinutes(expiration.getMinutes() + 30);
+
+
+                    //ditch the content if too old
+
+                    if (now.getTime() > expiration.getTime()) {
+
+                        data = false;
+
+                        sessionStorage.removeItem(storageKey);
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        catch (e) {
+
+            data = false;
+
+        }
+
+
+        if (data) {
+
+            fnShowContent(data);
+
+        }
+
+        else {
+
+            $.ajax({
+
+                type: "GET",
+
+                url: "url",
+
+                dataType: "html",
+
+                data: { action: "ajax-action" },
+
+                success: function (content, status, xhr) {
+
+                    //save in session storage if available
+
+                    if (hasStorage) {
+
+                        try {
+
+                            sessionStorage.setItem(storageKey, JSON.stringify({
+
+                                timestamp: new Date(),
+
+                                content: content
+
+                            }));
+
+                        }
+
+                        catch (e) {
+
+                            //silently suppress, it doesn't rally matter
+
+                        }
+
+                    }
+
+
+                    fnShowContent(data);
+
+                }
+
+            });
+
+        }
+
+    }
+
+
+    this.showContent = function (data) {
+
+
+    }
+
+
+    return this;
+
+}
+
+
+JWLibrary.TextProgress = function (tableBody) {
+
+    var $tbody = $(tableBody);
+
+    //var _interval = null;
+
+    var _spnaNum = 0;
+
+    var _timeout = 0;
+
+    this.setSpanNum = function(spanNum) {
+
+        _spnaNum = spanNum;
+
+    }
+
+
+    this.setTimeout = function (timeout) {
+
+        _timeout = timeout;
+
+    }
+
+
+    this.progressStart = function () {
+
+        if (_spnaNum <= 0) {
+
+            throw '테이블 스팬 범위가 지정되지 않았습니다.';
+
+        }
+
+        if (_timeout <= 0) timeout = 1000;
+
+
+        $tbody.empty();
+
+
+        var idx = 1;
+
+        var _interval = setInterval(function () {
+
+            if (idx == 1) {
+
+                $tbody.html('<tr><td colspan="' + _spnaNum + '">조회중</td></tr>');
+
+            }
+
+            else if (idx == 2) {
+
+                $tbody.html('<tr><td colspan="' + _spnaNum + '">조회중.</td></tr>');
+
+            }
+
+            else if (idx == 3) {
+
+                $tbody.html('<tr><td colspan="' + _spnaNum + '">조회중..</td></tr>');
+
+            }
+
+            else {
+
+                $tbody.html('<tr><td colspan="' + _spnaNum + '">조회중...</td></tr>');
+
+                idx = 0;
+
+            }
+
+
+            idx++;
+
+        }, _timeout);
+
+
+        return _interval;
+
+    }
+
+
+    this.progressStop = function (_interval) {
+
+        if (_interval != null) {
+
+            clearInterval(_interval);
+
+        }
+
+
+        return this;
+
+    }
+
+
+    return this;
+
+}
